@@ -11,6 +11,7 @@ import {
   buildEip712TypedData,
   fetchAccountInfo,
   messagesToJson,
+  recoverSigner,
 } from './lib/injective'
 import { TRADING_MESSAGES, RFQ_TRADING_MESSAGES, NETWORK_CONFIG } from './lib/constants'
 
@@ -22,7 +23,7 @@ const signaturePayload = ref<unknown>(null)
 
 const messagesStatus = ref<'idle' | 'ready' | 'error'>('idle')
 const typedDataStatus = ref<'idle' | 'ready' | 'error'>('idle')
-const signStatus = ref<'idle' | 'ready' | 'pending' | 'signed' | 'error'>('idle')
+const signStatus = ref<'idle' | 'ready' | 'pending' | 'signed' | 'verified' | 'invalid' | 'error'>('idle')
 
 const messagesError = ref<string | null>(null)
 const typedDataError = ref<string | null>(null)
@@ -146,7 +147,23 @@ async function onSign() {
       granter.value.eth,
       builtTypedData.value,
     )
+
+    // Locally verify: recover the signer from the signature and compare to the
+    // connected MetaMask address. If they match, the signature is valid for this
+    // typed data. No network calls needed.
+    const recovery = await recoverSigner(
+      builtTypedData.value as Parameters<typeof recoverSigner>[0],
+      signature as `0x${string}`,
+      granter.value.eth,
+    )
+
     signaturePayload.value = {
+      verification: {
+        match: recovery.match,
+        recovered: recovery.recovered,
+        recoveredInj: recovery.recoveredInj,
+        expected: recovery.expected,
+      },
       signer: granter.value.eth,
       signerInj: granter.value.inj,
       signedOnEvmChainId: typedDataEvmChainId.value,
@@ -154,7 +171,10 @@ async function onSign() {
       signature,
       signatureLengthBytes: (signature.length - 2) / 2,
     }
-    signStatus.value = 'signed'
+    signStatus.value = recovery.match ? 'verified' : 'invalid'
+    if (!recovery.match) {
+      signError.value = `signature recovered ${recovery.recovered} but expected ${recovery.expected}`
+    }
   } catch (e: unknown) {
     signError.value = e instanceof Error ? e.message : String(e)
     signStatus.value = 'error'

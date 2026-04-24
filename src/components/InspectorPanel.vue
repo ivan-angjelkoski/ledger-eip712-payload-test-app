@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-type Status = 'idle' | 'ready' | 'pending' | 'signed' | 'error'
+type Status = 'idle' | 'ready' | 'pending' | 'signed' | 'verified' | 'invalid' | 'error'
 
 const props = defineProps<{
   index: string
@@ -29,6 +29,8 @@ const statusLabel = computed(() => {
     case 'ready': return '[ready]'
     case 'pending': return '[signing…]'
     case 'signed': return '[signed]'
+    case 'verified': return '[verified ✓]'
+    case 'invalid': return '[mismatch ✗]'
     case 'error': return '[error]'
   }
 })
@@ -119,6 +121,8 @@ h2 {
   gap: 4px;
 }
 .status[data-status='signed'] { color: var(--accent); }
+.status[data-status='verified'] { color: var(--accent); font-weight: 500; }
+.status[data-status='invalid'] { color: var(--danger); font-weight: 500; }
 .status[data-status='pending'] { color: var(--fg); }
 .status[data-status='error'] { color: var(--danger); }
 .status[data-status='ready'] { color: var(--fg); }
@@ -155,6 +159,8 @@ h2 {
   position: relative;
 }
 .panel[data-status='signed'] .body::after,
+.panel[data-status='verified'] .body::after,
+.panel[data-status='invalid'] .body::after,
 .panel[data-status='ready'] .body::after {
   content: '';
   position: absolute;

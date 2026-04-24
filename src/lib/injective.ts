@@ -8,6 +8,7 @@ import {
 } from '@injectivelabs/sdk-ts'
 import { getNetworkEndpoints, Network } from '@injectivelabs/networks'
 import { MsgType, EvmChainId } from '@injectivelabs/ts-types'
+import { recoverTypedDataAddress } from 'viem'
 import { EXPIRATION_SECONDS_DEFAULT } from './constants'
 
 export function ethToInj(ethAddress: string): string {
@@ -104,4 +105,38 @@ export function buildEip712TypedData({
 
 export function messagesToJson(msgs: Msgs[]): unknown[] {
   return msgs.map((m) => m.toEip712V2())
+}
+
+export interface RecoveryResult {
+  recovered: `0x${string}`
+  expected: string
+  match: boolean
+  recoveredInj: string
+}
+
+export async function recoverSigner(
+  typedData: {
+    domain: Record<string, unknown>
+    types: Record<string, Array<{ name: string; type: string }>>
+    primaryType: string
+    message: Record<string, unknown>
+  },
+  signature: `0x${string}`,
+  expectedEthAddress: string,
+): Promise<RecoveryResult> {
+  // viem returns the 0x-prefixed 20-byte address directly.
+  const recovered = await recoverTypedDataAddress({
+    domain: typedData.domain as Parameters<typeof recoverTypedDataAddress>[0]['domain'],
+    types: typedData.types,
+    primaryType: typedData.primaryType,
+    message: typedData.message,
+    signature,
+  })
+  const match = recovered.toLowerCase() === expectedEthAddress.toLowerCase()
+  return {
+    recovered,
+    expected: expectedEthAddress,
+    match,
+    recoveredInj: getInjectiveAddress(recovered),
+  }
 }
