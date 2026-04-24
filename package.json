@@ -9,6 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@injectivelabs/networks": "^1.18.22",
+    "@injectivelabs/sdk-ts": "^1.18.22",
+    "@injectivelabs/ts-types": "^1.18.22",
+    "@injectivelabs/utils": "^1.18.22",
+    "@injectivelabs/wallet-base": "^1.18.22",
     "vue": "^3.5.32"
   },
   "devDependencies": {
