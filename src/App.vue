@@ -229,7 +229,6 @@ function onReset() {
       <div class="brand">
         <span class="mark" />
         <h1>
-          <span class="pre">tc</span>
           <span class="main">auto-sign</span>
           <span class="post">·inspector</span>
         </h1>
@@ -288,6 +287,7 @@ function onReset() {
           :payload="signaturePayload"
           :error-message="signError || undefined"
           :notice-message="signNotice || undefined"
+          :auto-expand="true"
           empty-hint="→ build typed data · then approve in metamask"
         />
       </main>
