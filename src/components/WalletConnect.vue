@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { connect, hasMetaMask, getChainId, onChainChanged } from '../lib/metamask'
 import { ethToInj } from '../lib/injective'
+import { toFriendlyError, isUserRejection } from '../lib/errors'
 
 const emit = defineEmits<{
   (e: 'connected', v: { ethAddress: string; injAddress: string }): void
@@ -10,6 +11,7 @@ const emit = defineEmits<{
 const ethAddress = ref<string | null>(null)
 const connecting = ref(false)
 const error = ref<string | null>(null)
+const cancelled = ref(false)
 const chainId = ref<number | null>(null)
 let unsubscribe: (() => void) | null = null
 
@@ -27,6 +29,7 @@ async function refreshChainId() {
 
 async function handleConnect() {
   error.value = null
+  cancelled.value = false
   connecting.value = true
   try {
     const addr = await connect()
@@ -34,7 +37,11 @@ async function handleConnect() {
     await refreshChainId()
     emit('connected', { ethAddress: addr, injAddress: ethToInj(addr) })
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : String(e)
+    if (isUserRejection(e)) {
+      cancelled.value = true
+    } else {
+      error.value = toFriendlyError(e)
+    }
   } finally {
     connecting.value = false
   }
@@ -85,7 +92,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <p v-if="error" class="err">{{ error }}</p>
+    <p v-if="cancelled" class="notice">Connection cancelled.</p>
+    <p v-else-if="error" class="err">{{ error }}</p>
   </div>
 </template>
 
@@ -178,5 +186,12 @@ code.muted { color: var(--muted); }
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--danger);
+}
+.notice {
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
 }
 </style>

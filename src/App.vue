@@ -6,6 +6,7 @@ import GrantForm from './components/GrantForm.vue'
 import type { FormState } from './components/GrantForm.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 import { signTypedDataV4, ensureChainId, getChainId } from './lib/metamask'
+import { toFriendlyError, isUserRejection } from './lib/errors'
 import {
   buildGrantMessages,
   buildEip712TypedData,
@@ -28,6 +29,7 @@ const signStatus = ref<'idle' | 'ready' | 'pending' | 'signed' | 'verified' | 'i
 const messagesError = ref<string | null>(null)
 const typedDataError = ref<string | null>(null)
 const signError = ref<string | null>(null)
+const signNotice = ref<string | null>(null)
 
 const buildingMessages = ref(false)
 const buildingTypedData = ref(false)
@@ -78,7 +80,7 @@ async function onBuildMessages(state: FormState) {
     }
     messagesStatus.value = 'ready'
   } catch (e: unknown) {
-    messagesError.value = e instanceof Error ? e.message : String(e)
+    messagesError.value = toFriendlyError(e)
     messagesStatus.value = 'error'
   } finally {
     buildingMessages.value = false
@@ -124,7 +126,7 @@ async function onBuildTypedData(state: FormState) {
     signaturePayload.value = null
     signStatus.value = 'idle'
   } catch (e: unknown) {
-    typedDataError.value = e instanceof Error ? e.message : String(e)
+    typedDataError.value = toFriendlyError(e)
     typedDataStatus.value = 'error'
   } finally {
     buildingTypedData.value = false
@@ -134,6 +136,7 @@ async function onBuildTypedData(state: FormState) {
 async function onSign() {
   if (!granter.value || !builtTypedData.value || typedDataEvmChainId.value == null) return
   signError.value = null
+  signNotice.value = null
   signing.value = true
   signStatus.value = 'pending'
   try {
@@ -176,8 +179,13 @@ async function onSign() {
       signError.value = `signature recovered ${recovery.recovered} but expected ${recovery.expected}`
     }
   } catch (e: unknown) {
-    signError.value = e instanceof Error ? e.message : String(e)
-    signStatus.value = 'error'
+    if (isUserRejection(e)) {
+      signNotice.value = 'Signature cancelled in MetaMask.'
+      signStatus.value = 'ready'
+    } else {
+      signError.value = toFriendlyError(e)
+      signStatus.value = 'error'
+    }
   } finally {
     signing.value = false
   }
@@ -196,6 +204,7 @@ function onReset() {
   messagesError.value = null
   typedDataError.value = null
   signError.value = null
+  signNotice.value = null
 }
 </script>
 
@@ -260,6 +269,7 @@ function onReset() {
           :status="signStatus"
           :payload="signaturePayload"
           :error-message="signError || undefined"
+          :notice-message="signNotice || undefined"
           empty-hint="→ build typed data · then approve in metamask"
         />
       </main>

@@ -9,6 +9,7 @@ const props = defineProps<{
   status: Status
   payload: unknown
   errorMessage?: string
+  noticeMessage?: string
   emptyHint?: string
 }>()
 
@@ -66,6 +67,7 @@ async function copy() {
     <div class="body">
       <pre v-if="pretty" :key="pretty"><code>{{ pretty }}</code></pre>
       <p v-else-if="status === 'error'" class="error">{{ errorMessage || 'error' }}</p>
+      <p v-else-if="noticeMessage" class="notice">{{ noticeMessage }}</p>
       <p v-else class="hint">{{ emptyHint || '— awaiting input —' }}</p>
     </div>
   </section>
@@ -195,6 +197,13 @@ pre code {
 }
 
 .hint {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  font-style: italic;
+}
+.notice {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
