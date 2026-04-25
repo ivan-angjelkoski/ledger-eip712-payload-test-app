@@ -34,6 +34,7 @@ const signNotice = ref<string | null>(null)
 const buildingMessages = ref(false)
 const buildingTypedData = ref(false)
 const signing = ref(false)
+const autoRunning = ref(false)
 
 // Hold the current msgs array between panel 01 and 02. shallowRef keeps sdk-ts'
 // discriminated-union Msgs types intact (deep reactivity collapses them).
@@ -191,6 +192,20 @@ async function onSign() {
   }
 }
 
+async function onAuto(state: FormState) {
+  if (!granter.value) return
+  autoRunning.value = true
+  try {
+    await onBuildMessages(state)
+    if (messagesStatus.value === 'error') return
+    await onBuildTypedData(state)
+    if (typedDataStatus.value === 'error') return
+    await onSign()
+  } finally {
+    autoRunning.value = false
+  }
+}
+
 function onReset() {
   messagesPayload.value = null
   typedDataPayload.value = null
@@ -234,6 +249,8 @@ function onReset() {
         <WalletConnect @connected="onConnected" />
         <GrantForm
           :connected="!!granter"
+          :granter-inj="granter?.inj ?? null"
+          :auto-running="autoRunning"
           :building-messages="buildingMessages"
           :building-typed-data="buildingTypedData"
           :signing="signing"
@@ -242,6 +259,7 @@ function onReset() {
           @build-messages="onBuildMessages"
           @build-typed-data="onBuildTypedData"
           @sign="onSign"
+          @auto="onAuto"
           @reset="onReset"
         />
       </aside>

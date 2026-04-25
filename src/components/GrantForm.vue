@@ -9,6 +9,8 @@ const props = defineProps<{
   signing: boolean
   hasMessages: boolean
   hasTypedData: boolean
+  granterInj?: string | null
+  autoRunning?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +18,7 @@ const emit = defineEmits<{
   (e: 'build-typed-data', v: FormState): void
   (e: 'sign'): void
   (e: 'reset'): void
+  (e: 'auto', v: FormState): void
 }>()
 
 export interface FormState {
@@ -79,6 +82,23 @@ const canBuildTypedData = computed(
 const canSign = computed(
   () => props.hasTypedData && !props.signing,
 )
+const canAuto = computed(
+  () =>
+    props.connected &&
+    !props.buildingMessages &&
+    !props.buildingTypedData &&
+    !props.signing &&
+    !props.autoRunning,
+)
+
+function handleAuto() {
+  if (!canAuto.value) return
+  if (!grantee.value.trim() && props.granterInj) {
+    grantee.value = props.granterInj
+  }
+  if (!granteeValid.value) return
+  emit('auto', state.value)
+}
 </script>
 
 <template>
@@ -173,6 +193,13 @@ const canSign = computed(
     </div>
 
     <div class="actions">
+      <button
+        class="btn primary auto"
+        :disabled="!canAuto"
+        @click="handleAuto"
+      >
+        {{ autoRunning ? 'auto · running…' : '⚡ auto · self-grant + sign' }}
+      </button>
       <button
         class="btn"
         :disabled="!canBuildMessages"
@@ -351,6 +378,13 @@ select {
 }
 .btn.primary:hover:not(:disabled) {
   background: rgba(0, 245, 212, 0.07);
+}
+.btn.auto {
+  justify-content: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin-bottom: 4px;
 }
 .btn.ghost {
   color: var(--muted);
