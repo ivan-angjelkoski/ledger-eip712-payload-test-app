@@ -14,7 +14,12 @@ import {
   messagesToJson,
   recoverSigner,
 } from './lib/injective'
-import { TRADING_MESSAGES, RFQ_TRADING_MESSAGES, NETWORK_CONFIG } from './lib/constants'
+import {
+  TRADING_MESSAGES,
+  RFQ_TRADING_MESSAGES,
+  NETWORK_CONFIG,
+  EIP712_TEST_ACCOUNT_ADDRESS,
+} from './lib/constants'
 
 const granter = ref<{ eth: string; inj: string } | null>(null)
 
@@ -98,7 +103,7 @@ async function onBuildTypedData(state: FormState) {
 
     if (!accountNumber || !sequence) {
       const cfg = NETWORK_CONFIG[state.network]
-      const info = await fetchAccountInfo(cfg.network, granter.value.inj)
+      const info = await fetchAccountInfo(cfg.network, EIP712_TEST_ACCOUNT_ADDRESS)
       accountNumber = accountNumber || info.accountNumber
       sequence = sequence || info.sequence
     }
@@ -116,6 +121,7 @@ async function onBuildTypedData(state: FormState) {
     builtTypedData.value = typedData
     typedDataEvmChainId.value = state.evmChainId
     typedDataPayload.value = {
+      accountInfoAddress: EIP712_TEST_ACCOUNT_ADDRESS,
       resolvedAccountNumber: accountNumber,
       resolvedSequence: sequence,
       evmChainId: state.evmChainId,
@@ -278,7 +284,7 @@ function onReset() {
           :status="typedDataStatus"
           :payload="typedDataPayload"
           :error-message="typedDataError || undefined"
-          empty-hint="→ build messages first · fetches account num + sequence from chain"
+          empty-hint="→ build messages first · fetches account num + sequence from the test account"
         />
         <InspectorPanel
           index="03"

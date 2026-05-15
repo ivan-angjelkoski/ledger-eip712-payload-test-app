@@ -48,3 +48,5 @@ export const NETWORK_CONFIG: Record<
 }
 
 export const EXPIRATION_SECONDS_DEFAULT = 60 * 60 * 24 * 30
+
+export const EIP712_TEST_ACCOUNT_ADDRESS = 'inj16qwwxvqsjcv233pw54z3rkq47g98wa5h2crpt7'
